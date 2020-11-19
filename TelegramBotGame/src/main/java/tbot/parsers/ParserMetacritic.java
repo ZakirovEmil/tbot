@@ -1,114 +1,127 @@
 package tbot.parsers;
 
 
+import org.javatuples.Pair;
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
 
-public class ParserMetacritic {
+public class ParserMetacritic extends Parser {
 
-    private Document document;
-    private String link;
-    private String nameGame;
-    private String platformGame;
-    private final String LINK_METACRITIC = "https://www.metacritic.com/game";
+    private static final String positiveCriticGameTag = "metascore_w xlarge game positive";
+    private static final String positiveUserGameTag = "metascore_w user large game positive";
+    private static final String mixedCriticGameTag = "metascore_w xlarge game mixed";
+    private static final String mixedUserGameTag = "metascore_w user large game mixed";
+    private static final String negativeCriticGameTag = "metascore_w xlarge game negative";
+    private static final String forOfficialNameGame = "product_title";
+    private static final String forDeveloperGame = "summary_detail publisher";
+    private static final String forPlatformsGame = "summary_detail product_platforms";
+    private static final String forReleaseGame = "summary_detail release_data";
+    private static final String negativeUserGameTag = "metascore_w user large game negative";
 
-    public ParserMetacritic(String nameGame, String platformGame) throws IOException {
-        this.nameGame = nameGame;
-        this.platformGame = platformGame;
-        link = creatLinkMetacritic();
-        document = Jsoup.connect(link)
-                .userAgent("Chrome/4.0.249.0 Safari/532.5")
-                .referrer("http://www.google.com")
-                .get();;
+    public static String parseGame(String nameGame, String platformGame) throws IOException {
+        var link = creatLinkMetacritic(platformGame, nameGame);
+        if (!linkIsCorrect(link))
+            return "Мы не нашли вашу игру на Metacritic :(";
+        var document = Connect(link);
+        var scoreRating = getScoreRating(document);
+        var officialNameGame = getOfficialNameGame(document);
+        var developerGame = getDeveloperGame(document);
+        var releaseGame = getReleaseGame(document);
+        var alsoPlatformsGame = getPlatformsGame(document);
+        System.out.println(nameGame);
+        System.out.println(platformGame);
+        System.out.println(link);
+        System.out.println(linkIsCorrect(link));
+        return getResultGameStr(
+                scoreRating.getValue0(),
+                scoreRating.getValue1(),
+                officialNameGame,
+                developerGame,
+                releaseGame,
+                platformGame,
+                alsoPlatformsGame
+        );
     }
 
-    private String creatLinkMetacritic(){
-        var link = LINK_METACRITIC +
-                "/" + platformGame + "/" +
-                nameGame.replace(" ", "-");
+    private static String creatLinkMetacritic(String platformGame, String nameGame) {
+        String LINK_METACRITIC = "https://www.metacritic.com/game";
+        var link = LINK_METACRITIC + "/" +
+                platformGame.replace(" ", "-").toLowerCase() + "/" +
+                nameGame.replace(" ", "-").toLowerCase();
         System.out.println(link);
         return link;
     }
 
-    public String getInfoMetacritic(){
-        var str = "Critics score:" + getCriticsScore() +
-                " " +
-                "Users score:" + getUsersScore();
-        return str;
+    private static String getDeveloperGame(Document document){
+        return document
+                .getElementsByClass(forDeveloperGame)
+                .select(".data")
+                .text()
+                .trim();
     }
 
-    private String getCriticsScore(){
+    private static String getReleaseGame(Document document){
+        return document
+                .getElementsByClass(forReleaseGame)
+                .select(".data")
+                .text()
+                .trim();
+    }
+
+    private static String getPlatformsGame(Document document){
+        return document
+                .getElementsByClass(forPlatformsGame)
+                .select(".data").text().trim();
+    }
+
+    private static String getOfficialNameGame(Document document){
+        return document
+                .getElementsByClass(forOfficialNameGame)
+                .select("h1")
+                .text();
+    }
+
+    private static Pair<String, String> getScoreRating(Document document) {
+        Elements userScore;
+        Elements criticsScore;
         try {
-            Elements text;
-//                    .getElementsByClass("metascore_w xlarge game positive")
-//                    .select("span")
-//                    .text();
-//            var text = document.getElementsByClass("metascore_w xlarge game positive") != null ?
-//                    document.getElementsByClass("metascore_w xlarge game positive") :
-//                    document.getElementsByClass("metascore_w xlarge game mixed") != null ?
-//                            document.getElementsByClass("metascore_w xlarge game mixed") :
-//                            document.getElementsByClass("metascore_w xlarge game negative") != null ?
-//                            document.getElementsByClass("metascore_w xlarge game negative") : null;
-            if (document.getElementsByClass("metascore_w xlarge game positive") != null){
-                text = document.getElementsByClass("metascore_w xlarge game positive");
-            } else if(document.getElementsByClass("metascore_w xlarge game mixed") != null){
-                text = document.getElementsByClass("metascore_w xlarge game mixed");
+            if (document.getElementsByClass(positiveUserGameTag).hasText()) {
+                userScore = document.getElementsByClass(positiveUserGameTag);
+            } else if (document.getElementsByClass(mixedUserGameTag).hasText()) {
+                userScore = document.getElementsByClass(mixedUserGameTag);
             } else {
-                text = document.getElementsByClass("metascore_w xlarge game negative");
+                userScore = document.getElementsByClass(negativeUserGameTag);
             }
-            System.out.println(text + "critics");
-            return text.select("span").text();
-        } catch (Exception e){
+            if (document.getElementsByClass(positiveCriticGameTag).hasText()) {
+                criticsScore = document.getElementsByClass(positiveCriticGameTag);
+            } else if (document.getElementsByClass(mixedCriticGameTag).hasText()) {
+                criticsScore = document.getElementsByClass(mixedCriticGameTag);
+            } else {
+                criticsScore = document.getElementsByClass(negativeCriticGameTag);
+            }
+            System.out.println("Score work");
+            return new Pair<String, String>(
+                    criticsScore.text(),
+                    userScore.first().text()
+            );
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        return "null";
+        return new Pair<String, String>("Null", "Null");
     }
 
-    private String getUsersScore(){
-        try {
-            Elements text;
-//                    .getElementsByClass("metascore_w user large game positive")
-//                    .first()
-//                    .text();
-//            var text = document.getElementsByClass("metascore_w user large game positive") != null ?
-//                    document.getElementsByClass("metascore_w user large game positive") :
-//                    document.getElementsByClass("metascore_w user large game mixed") != null ?
-//                            document.getElementsByClass("metascore_w user large game mixed") :
-//                            document.getElementsByClass("metascore_w user large game negative") != null ?
-//                                    document.getElementsByClass("metascore_w user large game negative") : null;
-            if (document.getElementsByClass("metascore_w user large game positive") != null){
-                text = document.getElementsByClass("metascore_w user large game positive");
-            } else if(document.getElementsByClass("metascore_w user large game mixed") != null){
-                text = document.getElementsByClass("metascore_w user large game mixed");
-            } else {
-                text = document.getElementsByClass("metascore_w user large game negative");
-            }
-            System.out.println(text + "users");
-            return text.first().text();
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        return "null";
+    private static String getResultGameStr(String criticScore, String userScore, String officNameGame,
+                                           String developerGame, String releaseGame, String platformGame, String alsoPlatformsGame) {
+        return "Навзвание игры: " + officNameGame + "\n" +
+                "Разработчик: " + developerGame + "\n" +
+                "Релиз: " + releaseGame + "\n" +
+                "Платформы: " + alsoPlatformsGame + ", " + platformGame + "\n" +
+                "Оценка критиков: " + criticScore + "\n" +
+                "Оценка пользователей: " + userScore;
     }
-
 }
-
-//import org.jsoup.Jsoup;
-//import org.jsoup.nodes.Document;
-//import org.jsoup.select.Elements;
-//
-//import java.io.IOException;
-//
-//public class InfoGame {
-//    private String link ;
-//
-//    public InfoGame(String l) throws IOException {
-//        link = l;
-//        Document doc = Jsoup.connect(link).get();
-//        Elements needs = doc.select("<div#class="metascore_w xlarge game positive">");
-//        System.out.println("dads");
-//    }
-//}

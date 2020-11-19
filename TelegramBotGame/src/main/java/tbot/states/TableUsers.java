@@ -1,4 +1,4 @@
-package tbot.users;
+package tbot.states;
 
 import java.util.HashMap;
 
@@ -17,10 +17,9 @@ public class TableUsers {
         user.setState(state);
         tableUsers.put(chatId, user);
     }
-
     public State getStateUser(String chatId){
         return tableUsers
-                .getOrDefault(chatId, new User())
+                .get(chatId)
                 .getState();
     }
 
@@ -48,10 +47,7 @@ public class TableUsers {
     }
 
     public User getUser(String chatId){
-        return tableUsers.getOrDefault(chatId, new User());
+        return tableUsers.get(chatId);
     }
 
-    public void removeUser(String chatId){
-        tableUsers.remove(chatId);
-    }
 }

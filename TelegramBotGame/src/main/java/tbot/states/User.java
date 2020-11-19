@@ -1,10 +1,10 @@
-package tbot.users;
+package tbot.states;
 
 public class User {
 
     private String nameGame;
     private String namePlatform;
-    private State state = State.START;
+    private State state;
 
     public String getNameGame(){ return nameGame ;}
 
@@ -13,7 +13,7 @@ public class User {
     }
 
     public State getState() {
-        return  state;
+        return state;
     }
 
     public void setNameGame(String nameGame) {
