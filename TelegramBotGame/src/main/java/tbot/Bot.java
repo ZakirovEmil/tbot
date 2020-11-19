@@ -2,6 +2,8 @@ package tbot;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -49,7 +51,7 @@ public class Bot extends TelegramLongPollingBot {
                         .toString();
                 System.out.println(msg.getText());
                 try {
-                    execute(handleIncomingMessage(msg));
+                    handleIncomingMessage(msg);
                 } catch (TelegramApiException | IOException exception) {
                     exception.printStackTrace();
                 }
@@ -57,40 +59,38 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
-    private SendMessage handleIncomingMessage(Message msg) throws IOException, TelegramApiException {
+    private void handleIncomingMessage(Message msg) throws IOException, TelegramApiException {
         var state = tableUsers.getStateUser(chatId);
         var textMsg = msg.getText();
-        SendMessage sendMsg = null;
         if (textMsg.startsWith(Commands.PREFIX)) {
             if (textMsg.startsWith(Commands.START_COMMAND)) {
-                return creatMessageWithKeyboard(TextMessages.START, getStartKeyboard());
+                execute(creatMessageWithKeyboard(TextMessages.START, getStartKeyboard()));
             } else if (textMsg.startsWith(Commands.STOP_COMMAND)) {
-                return sendHideKeyboard();
+                sendHideKeyboard();
             }
         }
         switch (state) {
             case START:
-                sendMsg = messageOnStartMenu(textMsg);
+                messageOnStartMenu(textMsg);
                 break;
             case NAME_GAME:
-                sendMsg = messageOnNameGame(textMsg);
+                messageOnNameGame(textMsg);
                 break;
             case NAME_PLATFORM:
-                sendMsg = messageOnNamePlatform(textMsg);
+                messageOnNamePlatform(textMsg);
                 break;
             default:
-                sendMsg = messageDefault();
+                messageDefault();
                 break;
         }
-        return sendMsg;
     }
 
-    private SendMessage sendHideKeyboard() throws TelegramApiException {
+    private void sendHideKeyboard() throws TelegramApiException {
         tableUsers.removeUser(chatId);
-        return creatMessage(TextMessages.BYE);
+        execute(creatMessage(TextMessages.BYE));
     }
 
-    private SendMessage messageOnStartMenu(String textMsg) {
+    private void messageOnStartMenu(String textMsg) throws TelegramApiException {
         var sendMsg = new SendMessage();
         switch (textMsg) {
             case TextButtons.METACRITIC:
@@ -101,31 +101,30 @@ public class Bot extends TelegramLongPollingBot {
                 sendMsg = creatMessageWithKeyboard(TextMessages.HELP, getStartKeyboard());
                 tableUsers.setStateUser(chatId, State.START);
         }
-        return sendMsg;
+        execute(sendMsg);
     }
 
-    private SendMessage messageOnNameGame(String textMsg) {
+    private void messageOnNameGame(String textMsg) throws TelegramApiException {
         tableUsers.setStateUser(chatId, State.NAME_PLATFORM);
         tableUsers.setNameGameUser(chatId, textMsg);
-        return creatMessageWithKeyboard(TextMessages.NAME_PLATFORM, getNamePlatformKeyboard());
+        execute(creatMessageWithKeyboard(TextMessages.NAME_PLATFORM, getNamePlatformKeyboard()));
     }
 
-    private SendMessage messageOnNamePlatform(String textMsg) throws IOException {
+    private void messageOnNamePlatform(String textMsg) throws IOException, TelegramApiException {
         var sendMsg = new SendMessage();
         switch (textMsg) {
             case TextButtons.PLAYSTATION:
             case TextButtons.NINTENDO:
             case TextButtons.XBOX:
                 tableUsers.setStateUser(chatId, State.NAME_PLATFORM);
-                sendMsg = creatMessageWithKeyboard(TextMessages.SERIES, getNamePlatformSeriesKeyboard(textMsg));
+                execute(creatMessageWithKeyboard(TextMessages.SERIES, getNamePlatformSeriesKeyboard(textMsg)));
                 break;
             default:
                 tableUsers.setPlatformUser(chatId, textMsg);
                 tableUsers.setStateUser(chatId, State.START);
-                sendMsg = createAnswerMessage();
+                sendAnswerMessage();
                 break;
         }
-        return sendMsg;
     }
 
     private SendMessage messageDefault() {
@@ -133,13 +132,18 @@ public class Bot extends TelegramLongPollingBot {
         return creatMessageWithKeyboard(TextMessages.HELP, getStartKeyboard());
     }
 
-    private SendMessage createAnswerMessage() throws IOException {
+    private void sendAnswerMessage() throws IOException, TelegramApiException {
         var parserMetacritic = new ParserMetacritic();
         var answer = parserMetacritic.parseGame(
                 tableUsers.getNameGameUser(chatId),
                 tableUsers.getNamePlatformUser(chatId)
         );
-        return creatMessageWithKeyboard(answer, getStartKeyboard());
+//        SendPhoto sendPhotoRequest = new SendPhoto();
+//        sendPhotoRequest.setChatId(chatId);
+//        sendPhotoRequest.setPhoto(new InputFile(answer.getValue1()));
+//        System.out.println(answer.getValue1());
+//        execute(sendPhotoRequest);
+        execute(creatMessageWithKeyboard(answer, getStartKeyboard()));
     }
 
     private SendMessage creatMessageWithKeyboard(String textMsg, ArrayList<KeyboardRow> keyboard) {

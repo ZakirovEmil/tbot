@@ -2,11 +2,9 @@ package tbot.parsers;
 
 
 import org.javatuples.Pair;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import tbot.service.TextMessages;
 
 import java.io.IOException;
 
@@ -17,17 +15,19 @@ public class ParserMetacritic extends Parser {
     private static final String mixedCriticGameTag = "metascore_w xlarge game mixed";
     private static final String mixedUserGameTag = "metascore_w user large game mixed";
     private static final String negativeCriticGameTag = "metascore_w xlarge game negative";
-    private static final String forOfficialNameGame = "product_title";
-    private static final String forDeveloperGame = "summary_detail publisher";
-    private static final String forPlatformsGame = "summary_detail product_platforms";
-    private static final String forReleaseGame = "summary_detail release_data";
     private static final String negativeUserGameTag = "metascore_w user large game negative";
+    private static final String officialNameGame = "product_title";
+    private static final String developerGame = "summary_detail publisher";
+    private static final String platformsGame = "summary_detail product_platforms";
+    private static final String releaseGame = "summary_detail release_data";
+    private static final String imageGameClass = "hg-block short-game-description";
+    private static final String imageGameImgClass = "product_image large_image";
 
     public static String parseGame(String nameGame, String platformGame) throws IOException {
         var link = creatLinkMetacritic(platformGame, nameGame);
         if (!linkIsCorrect(link))
-            return "Мы не нашли вашу игру на Metacritic :(";
-        var document = Connect(link);
+            return TextMessages.GAME_NOT_FOUND;
+        var document = connect(link);
         var scoreRating = getScoreRating(document);
         var officialNameGame = getOfficialNameGame(document);
         var developerGame = getDeveloperGame(document);
@@ -48,6 +48,29 @@ public class ParserMetacritic extends Parser {
         );
     }
 
+//    private static String getImageUrl(String nameGame) throws IOException {
+//        var link = "https://hot-game.info/game/";
+//        var link1 = "https://hot-game.info/game/" + nameGame.replace(" ", "-").toLowerCase();
+//        if (linkIsCorrect(link1)){
+//            link = link1;
+//        }else {
+//            var output = "";//все слова с заглавной буквы.
+//            String[] words = nameGame.split("\" \"*");//разделяем на массив из слов
+//            for(String word:words){
+//                String first = word.substring(0,1).toUpperCase();
+//                String all = word.substring(1);
+//                output+=first+all;
+//            }
+//            link = link + output;
+//        }
+//        System.out.println(link);
+//        var document = connect(link);
+//        return document
+//                .getElementsByClass(imageGameClass)
+//                .select("img")
+//                .attr("src");
+//    }
+
     private static String creatLinkMetacritic(String platformGame, String nameGame) {
         String LINK_METACRITIC = "https://www.metacritic.com/game";
         var link = LINK_METACRITIC + "/" +
@@ -57,31 +80,31 @@ public class ParserMetacritic extends Parser {
         return link;
     }
 
-    private static String getDeveloperGame(Document document){
+    private static String getDeveloperGame(Document document) {
         return document
-                .getElementsByClass(forDeveloperGame)
+                .getElementsByClass(developerGame)
                 .select(".data")
                 .text()
                 .trim();
     }
 
-    private static String getReleaseGame(Document document){
+    private static String getReleaseGame(Document document) {
         return document
-                .getElementsByClass(forReleaseGame)
+                .getElementsByClass(releaseGame)
                 .select(".data")
                 .text()
                 .trim();
     }
 
-    private static String getPlatformsGame(Document document){
+    private static String getPlatformsGame(Document document) {
         return document
-                .getElementsByClass(forPlatformsGame)
+                .getElementsByClass(platformsGame)
                 .select(".data").text().trim();
     }
 
-    private static String getOfficialNameGame(Document document){
+    private static String getOfficialNameGame(Document document) {
         return document
-                .getElementsByClass(forOfficialNameGame)
+                .getElementsByClass(officialNameGame)
                 .select("h1")
                 .text();
     }

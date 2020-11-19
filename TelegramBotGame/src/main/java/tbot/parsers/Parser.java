@@ -7,7 +7,7 @@ import org.jsoup.nodes.Document;
 import java.io.IOException;
 
 public class Parser {
-    protected static Document Connect(String link) throws IOException {
+    protected static Document connect(String link) throws IOException {
         return Jsoup.connect(link)
                 .userAgent("Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:25.0) Gecko/20100101 Firefox/25.0")
                 .referrer("http://www.google.com")
