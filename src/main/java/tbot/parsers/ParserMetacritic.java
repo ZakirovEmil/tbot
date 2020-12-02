@@ -20,8 +20,6 @@ public class ParserMetacritic extends Parser {
     private static final String developerGame = "summary_detail publisher";
     private static final String platformsGame = "summary_detail product_platforms";
     private static final String releaseGame = "summary_detail release_data";
-    private static final String imageGameClass = "hg-block short-game-description";
-    private static final String imageGameImgClass = "product_image large_image";
 
     public static String parseGame(String nameGame, String platformGame) throws IOException {
         var link = creatLinkMetacritic(platformGame, nameGame);
@@ -48,34 +46,11 @@ public class ParserMetacritic extends Parser {
         );
     }
 
-//    private static String getImageUrl(String nameGame) throws IOException {
-//        var link = "https://hot-game.info/game/";
-//        var link1 = "https://hot-game.info/game/" + nameGame.replace(" ", "-").toLowerCase();
-//        if (linkIsCorrect(link1)){
-//            link = link1;
-//        }else {
-//            var output = "";//все слова с заглавной буквы.
-//            String[] words = nameGame.split("\" \"*");//разделяем на массив из слов
-//            for(String word:words){
-//                String first = word.substring(0,1).toUpperCase();
-//                String all = word.substring(1);
-//                output+=first+all;
-//            }
-//            link = link + output;
-//        }
-//        System.out.println(link);
-//        var document = connect(link);
-//        return document
-//                .getElementsByClass(imageGameClass)
-//                .select("img")
-//                .attr("src");
-//    }
-
     private static String creatLinkMetacritic(String platformGame, String nameGame) {
         String LINK_METACRITIC = "https://www.metacritic.com/game";
         var link = LINK_METACRITIC + "/" +
                 platformGame.replace(" ", "-").toLowerCase() + "/" +
-                nameGame.replace(" ", "-").toLowerCase();
+                nameGame.replace(":", "").replace(" ", "-").toLowerCase();
         System.out.println(link);
         return link;
     }
@@ -128,14 +103,14 @@ public class ParserMetacritic extends Parser {
                 criticsScore = document.getElementsByClass(negativeCriticGameTag);
             }
             System.out.println("Score work");
-            return new Pair<String, String>(
+            return new Pair<>(
                     criticsScore.text(),
                     userScore.first().text()
             );
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return new Pair<String, String>("Null", "Null");
+        return new Pair<>("Null", "Null");
     }
 
     private static String getResultGameStr(String criticScore, String userScore, String officNameGame,
