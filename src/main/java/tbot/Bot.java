@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRem
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import tbot.parsers.ParserHotGame;
 import tbot.parsers.ParserMetacritic;
 import tbot.service.CommandService;
 import tbot.service.TextButtons;
@@ -133,17 +134,12 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     private void sendAnswerMessage() throws IOException, TelegramApiException {
-        var answerMetacritic = ParserMetacritic.parseGame(
+        var answer = ParserMetacritic.parseGame(
                 tableUsers.getNameGameUser(chatId),
                 tableUsers.getNamePlatformUser(chatId)
-        );
-        var answerHotGame =
-//        SendPhoto sendPhotoRequest = new SendPhoto();
-//        sendPhotoRequest.setChatId(chatId);
-//        sendPhotoRequest.setPhoto(new InputFile(answer.getValue1()));
-//        System.out.println(answer.getValue1());
-//        execute(sendPhotoRequest);
-        execute(creatMessageWithKeyboard(answerMetacritic, getStartKeyboard()));
+        ) + ParserHotGame.parseGame(tableUsers.getNameGameUser(chatId),
+                tableUsers.getNamePlatformUser(chatId));
+        execute(creatMessageWithKeyboard(answer, getStartKeyboard()));
     }
 
     private SendMessage creatMessageWithKeyboard(String textMsg, ArrayList<KeyboardRow> keyboard) {
