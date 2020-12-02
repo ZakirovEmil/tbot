@@ -1,27 +1,36 @@
 package tbot.parsers;
 
 
+import org.javatuples.Pair;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import tbot.service.TextButtons;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import tbot.service.TextMessages;
 
 import java.io.IOException;
 import java.util.*;
 
+
 public class ParserHotGame extends Parser {
+
+    private static final String imageGameClass = "hg-block short-game-description";
+    private static final String imageGameImgClass = "product_image large_image";
+    private static final String rubles = "₽";
 
     private static final HashMap<String, String> websiteKey = new HashMap<>();
 
-    public static String parseGame(String nameGame, String namePlatform) throws IOException {
+    public static Pair<String, String> parseGame(String nameGame, String namePlatform) throws IOException {
         fillWebsiteKey();
         System.out.println(namePlatform);
-        if (!namePlatform.equals(TextButtons.PLATFORM_PC))
-            return "";
         var link = creatLinkHotGames(nameGame);
         if (!linkIsCorrect(link))
-            return "";
+            return new Pair<>(
+                    TextMessages.PRICE_NOT_FOUND,
+                    TextMessages.PRICE_NOT_FOUND
+            );
         var document = connect(link);
-        return getPrice(document, namePlatform);
+        return new Pair<>(getPrice(document, namePlatform), getImageUrl(document));
     }
 
     private static void fillWebsiteKey() {
@@ -35,35 +44,44 @@ public class ParserHotGame extends Parser {
         websiteKey.put("Eldorado", "div[onclick*=www.eldorado.ru]");
     }
 
+    private static String getImageUrl(Document document) throws IOException {
+        return document
+                .getElementsByClass(imageGameClass)
+                .select("img")
+                .attr("src");
+    }
+
+
     private static String creatLinkHotGames(String nameGame) {
         var link = "https://hot-game.info/game/";
         var nameGameForLink = nameGame.replace(" ", "-").toLowerCase();
         var link1 = link + nameGameForLink;
+        System.out.println(link1 + "1111111111");
         if (linkIsCorrect(link1)) {
             link = link1;
         } else {
-            var output = "";
+            var correctNameGameForLink = "";
             String[] words = nameGameForLink.split("-");
             for (String word : words) {
-                String first = word.substring(0, 1).toUpperCase();
-                String all = word.substring(1);
-                output += first + all + " ";
+                String firstLetter = word.substring(0, 1).toUpperCase();
+                String otherLetters = word.substring(1);
+                correctNameGameForLink += firstLetter + otherLetters + " ";
             }
-            System.out.println(output);
-            link = link + output.trim().replace(" ", "-");
+            System.out.println(correctNameGameForLink);
+            link = link + correctNameGameForLink.trim().replace(" ", "-");
         }
         System.out.println(link);
         return link;
     }
 
     private static String getPrice(Document document, String namePlatform) {
-        Elements rawString = null;
+        Elements html = null;
         try {
-            rawString = document.getElementsByClass("game-prices");
+            html = document.getElementsByClass("game-prices");
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return magSearch(rawString);
+        return magSearch(html);
     }
 
     private static String magSearch(Elements gamePriceList) {
@@ -75,12 +93,12 @@ public class ParserHotGame extends Parser {
             if (priceList.length > 2)
                 price = priceList[0].indexOf("%") == -1 ?
                         priceList[0] :
-                        priceList[1] + priceList[2] + "(" + priceList[0] + ")";
+                        priceList[1] + " (" + priceList[0] + ")";
             else
-                price = priceList[0] + priceList[1];
+                price = priceList[0];
             if (!price.isEmpty() && price.indexOf("нет в наличии") == -1)
                 priceCurrent = priceCurrent + "\n" +
-                        i.getKey() + ":" + price;
+                        i.getKey() + ": " + price;
         }
         System.out.println(priceCurrent);
         return priceCurrent;

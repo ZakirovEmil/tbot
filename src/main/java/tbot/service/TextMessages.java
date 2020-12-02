@@ -7,5 +7,6 @@ public class TextMessages {
     public static final String NAME_GAME = "Введи название игры.";
     public static final String NAME_PLATFORM = "Введи или выбери название игровой платформы.";
     public static final String GAME_NOT_FOUND = "Мы не нашли вашу игру на Metacritic :(";
+    public static final String PRICE_NOT_FOUND = "Мы не нашли вашу игру на Metacritic :(";
     public static final String BYE = "Пока!";
 }

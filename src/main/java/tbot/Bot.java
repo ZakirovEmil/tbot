@@ -1,5 +1,6 @@
 package tbot;
 
+import org.javatuples.Pair;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
@@ -134,12 +135,27 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     private void sendAnswerMessage() throws IOException, TelegramApiException {
-        var answer = ParserMetacritic.parseGame(
-                tableUsers.getNameGameUser(chatId),
-                tableUsers.getNamePlatformUser(chatId)
-        ) + ParserHotGame.parseGame(tableUsers.getNameGameUser(chatId),
+        var answerMetacritic = ParserMetacritic.parseGame(tableUsers.getNameGameUser(chatId),
                 tableUsers.getNamePlatformUser(chatId));
-        execute(creatMessageWithKeyboard(answer, getStartKeyboard()));
+        if (answerMetacritic == TextMessages.GAME_NOT_FOUND) {
+            execute(creatMessageWithKeyboard(answerMetacritic, getStartKeyboard()));
+            return;
+        }
+        var answerHotGame = ParserHotGame.parseGame(tableUsers.getNameGameUser(chatId),
+                tableUsers.getNamePlatformUser(chatId));
+        if (answerHotGame.getValue0() != TextMessages.PRICE_NOT_FOUND) {
+            execute(creatSendPhoto(answerHotGame.getValue1()));
+            execute(creatMessageWithKeyboard(answerMetacritic + answerHotGame.getValue0(), getStartKeyboard()));
+        } else {
+            execute(creatMessageWithKeyboard(answerMetacritic, getStartKeyboard()));
+        }
+    }
+
+    private SendPhoto creatSendPhoto(String url){
+        SendPhoto sendPhoto = new SendPhoto();
+        sendPhoto.setChatId(chatId);
+        sendPhoto.setPhoto(new InputFile(url));
+        return sendPhoto;
     }
 
     private SendMessage creatMessageWithKeyboard(String textMsg, ArrayList<KeyboardRow> keyboard) {
