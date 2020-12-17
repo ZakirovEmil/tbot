@@ -12,6 +12,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRem
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import tbot.api.Rawg;
 import tbot.parsers.ParserHotGame;
 import tbot.parsers.ParserMetacritic;
 import tbot.service.CommandService;
@@ -78,9 +79,9 @@ public class Bot extends TelegramLongPollingBot {
             case NAME_GAME:
                 messageOnNameGame(textMsg);
                 break;
-            case NAME_PLATFORM:
-                messageOnNamePlatform(textMsg);
-                break;
+//            case NAME_PLATFORM:
+//                messageOnNamePlatform(textMsg);
+//                break;
             default:
                 messageDefault();
                 break;
@@ -106,10 +107,13 @@ public class Bot extends TelegramLongPollingBot {
         execute(sendMsg);
     }
 
-    private void messageOnNameGame(String textMsg) throws TelegramApiException {
-        tableUsers.setStateUser(chatId, State.NAME_PLATFORM);
+    private void messageOnNameGame(String textMsg) throws TelegramApiException, IOException {
+//        tableUsers.setStateUser(chatId, State.NAME_PLATFORM);
+
+        tableUsers.setStateUser(chatId, State.START);
         tableUsers.setNameGameUser(chatId, textMsg);
-        execute(creatMessageWithKeyboard(TextMessages.NAME_PLATFORM, getNamePlatformKeyboard()));
+
+        sendAnswerMessage();
     }
 
     private void messageOnNamePlatform(String textMsg) throws IOException, TelegramApiException {
@@ -135,20 +139,25 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     private void sendAnswerMessage() throws IOException, TelegramApiException {
-        var answerMetacritic = ParserMetacritic.parseGame(tableUsers.getNameGameUser(chatId),
-                tableUsers.getNamePlatformUser(chatId));
-        if (answerMetacritic == TextMessages.GAME_NOT_FOUND) {
-            execute(creatMessageWithKeyboard(answerMetacritic, getStartKeyboard()));
-            return;
-        }
-        var answerHotGame = ParserHotGame.parseGame(tableUsers.getNameGameUser(chatId),
-                tableUsers.getNamePlatformUser(chatId));
-        if (answerHotGame.getValue0() != TextMessages.PRICE_NOT_FOUND) {
-            execute(creatSendPhoto(answerHotGame.getValue1()));
-            execute(creatMessageWithKeyboard(answerMetacritic + answerHotGame.getValue0(), getStartKeyboard()));
-        } else {
-            execute(creatMessageWithKeyboard(answerMetacritic, getStartKeyboard()));
-        }
+//        var answerMetacritic = ParserMetacritic.parseGame(tableUsers.getNameGameUser(chatId),
+//                tableUsers.getNamePlatformUser(chatId));
+//        if (answerMetacritic == TextMessages.GAME_NOT_FOUND) {
+//            execute(creatMessageWithKeyboard(answerMetacritic, getStartKeyboard()));
+//            return;
+//        }
+//        var answerHotGame = ParserHotGame.parseGame(tableUsers.getNameGameUser(chatId),
+//                tableUsers.getNamePlatformUser(chatId));
+//        if (answerHotGame.getValue0() != TextMessages.PRICE_NOT_FOUND) {
+//            execute(creatSendPhoto(answerHotGame.getValue1()));
+//            execute(creatMessageWithKeyboard(answerMetacritic + answerHotGame.getValue0(), getStartKeyboard()));
+//        } else {
+//            execute(creatMessageWithKeyboard(answerMetacritic, getStartKeyboard()));
+//        }
+        var textAndURL = Rawg.searchGame(tableUsers.getNameGameUser(chatId));
+        execute(creatSendPhoto(textAndURL.getValue1()));
+        execute(creatMessageWithKeyboard(textAndURL.getValue0(),
+                getStartKeyboard()));
+
     }
 
     private SendPhoto creatSendPhoto(String url){
